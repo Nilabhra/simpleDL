@@ -5,8 +5,13 @@ class FeedForward:
     def __init__(self, layer_dims=None, activation=tf.nn.relu):
         self.layer_dims = layer_dims
         self.num_layers = len(self.layer_dims) - 1
-        self.inputs = tf.placeholder(dtype=tf.float32, shape=[None, self.layer_dims[0]])
-        self.keep_probs = [tf.placeholder(dtype=tf.float32) for _ in range(self.num_layers)]
+        self.inputs = tf.placeholder(dtype=tf.float32,
+                                     shape=[None, self.layer_dims[0]],
+                                     name='inputs')
+        self.targets = tf.placeholder(dtype=tf.float32,
+                                      shape=[None, self.layer_dims[-1]],
+                                      name='labels')
+        self.keep_probs = [tf.placeholder(dtype=tf.float32, name='keep_prob'+str(_)) for _ in range(self.num_layers)]
         self.activation = activation
         self.weights = None
         self.biases = None
@@ -33,7 +38,7 @@ class FeedForward:
         return nonlinear_trans
 
 
-    def output(self):
+    def get_output(self):
         self.weights = []
         self.biases = []
 
@@ -46,9 +51,21 @@ class FeedForward:
         return op
 
 
-    def get_feed_dict(self, inputs, keep_probs):
-        if len(keep_probs) != num_layers:
+    def get_targets(self):
+        return self.targets
+
+
+    def get_train_feed_dict(self, inputs, targets=None, keep_probs=None):
+        if len(keep_probs) != self.num_layers:
             raise ValueError('dropout keep_prob must be defined for all layers except the last')
+        feed_dict = {self.keep_probs[i]: prob for i, prob in zip(range(self.num_layers), keep_probs)}
+        feed_dict[self.inputs] = inputs
+        feed_dict[self.targets] = targets
+        return feed_dict
+
+
+    def get_test_feed_dict(self, inputs):
+        keep_probs = [1.0 for _ in range(self.num_layers)]
         feed_dict = {self.keep_probs[i]: prob for i, prob in zip(range(self.num_layers), keep_probs)}
         feed_dict[self.inputs] = inputs
         return feed_dict
