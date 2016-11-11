@@ -2,14 +2,15 @@ import tensorflow as tf
 
 class FeedForward:
 
-    def __init__(self, layer_dims=None, activation=tf.nn.relu):
+    def __init__(self, layer_dims=None, num_classes=None, activation=tf.nn.relu):
         self.layer_dims = layer_dims
         self.num_layers = len(self.layer_dims) - 1
+        self.num_classes = num_classes
         self.inputs = tf.placeholder(dtype=tf.float32,
                                      shape=[None, self.layer_dims[0]],
                                      name='inputs')
         self.targets = tf.placeholder(dtype=tf.float32,
-                                      shape=[None, self.layer_dims[-1]],
+                                      shape=[None, self.num_classes],
                                       name='labels')
         self.keep_probs = [tf.placeholder(dtype=tf.float32, name='keep_prob'+str(_)) for _ in range(self.num_layers)]
         self.activation = activation
@@ -42,6 +43,10 @@ class FeedForward:
         self.weights = []
         self.biases = []
 
+        if self.num_layers == 1:
+            op = self.linear_layer(self.inputs, self.layer_dims[0], self.layer_dims[1])
+            return op
+        
         h = self.nonlinear_layer(self.inputs, self.layer_dims[0], self.layer_dims[1])
         for i in range(1, self.num_layers-1):
             dropped_h = tf.nn.dropout(h, self.keep_probs[i])
